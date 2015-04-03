@@ -9,9 +9,6 @@ import os
 from os.path import dirname, exists, isdir, join, realpath, relpath, splitext
 import re
 import requests
-import subprocess
-import sys
-import tempfile
 
 # This is a script that downloads all the GitHub issues in a
 # particular repository and generates a PDF for each one; the idea is
@@ -27,19 +24,22 @@ standard_headers = {'User-Agent': 'github-issues-printer/1.0',
 cwd = os.getcwd()
 repo_directory = realpath(join(dirname(__file__)))
 images_directory = relpath(join(repo_directory, 'images'), cwd)
-pdfs_directory = relpath(join(repo_directory, 'pdfs'), cwd)
+mds_directory = relpath(join(repo_directory, 'markdown_files'), cwd)
+
 
 def mkdir_p(d):
     try:
         os.makedirs(d)
-    except OSError, e:
+    except OSError as e:
         if e.errno == errno.EEXIST and isdir(d):
             pass
         else:
             raise
 
+
 mkdir_p(images_directory)
-mkdir_p(pdfs_directory)
+mkdir_p(mds_directory)
+
 
 def replace_image(match, download=True):
     """Rewrite an re match object that matched an image tag
@@ -59,14 +59,15 @@ def replace_image(match, download=True):
     hashed_url = hashlib.md5(url).hexdigest()
     extension = splitext(url)[1]
     if not extension:
-        raise Exception, "No extension at the end of {0}".format(url)
+        raise Exception("No extension at the end of {0}".format(url))
     image_filename = join(images_directory, hashed_url) + extension
     if download:
         if not exists(image_filename):
             r = requests.get(url)
             with open(image_filename, 'w') as f:
                 f.write(r.content)
-    return "![{0}]({1})".format(caption, image_filename)
+    return "![{0}]({1})".format(caption.encode('utf-8'), image_filename)
+
 
 def replace_images(md):
     """Rewrite a Markdown string to replace any images with local versions
@@ -76,47 +77,59 @@ def replace_images(md):
     by a reference to a local copy.
     """
 
-    return re.sub(r'\!\[(.*?)\]\((.*?)\)', replace_image, md)
+    return re.sub(r'!\[(.*?)\]\((.*?)\)', replace_image, md)
 
-def main(repo):
 
+def download(repo):
     page = 1
+    raw = open('raw_json.json', 'w')
     while True:
         issues_url = 'https://api.github.com/repos/{0}/issues'.format(repo)
         r = requests.get(issues_url,
                          params={'per_page': '100',
                                  'page': str(page),
-                                 'state': 'open'},
+                                 'state': 'all'},
                          headers=standard_headers)
         if r.status_code != 200:
-            raise Exception, "HTTP status {0} on fetching {1}".format(
+            raise Exception("HTTP status {0} on fetching {1}".format(
                 r.status_code,
-                issues_url)
+                issues_url))
 
         issues_json = r.json()
+        if len(issues_json) == 0:
+            raw.close()
+            break
+
         for issue in issues_json:
             number = issue['number']
-            pdf_filename = join(pdfs_directory,
-                                        '{}.pdf'.format(number))
-            if exists(pdf_filename):
+            md_filename = 'markdown_files/' + str(number) + '.md'
+            if exists(md_filename):
                 continue
-        
-            title = issue['title']
-            body = issue['body']
 
-            ntf = tempfile.NamedTemporaryFile(suffix='.md', delete=False)
-            md_filename = ntf.name
+            raw.write(str(issue))
+            raw.write("\n")
 
-            if issue['pull_request']['html_url']:
-                continue
+            print number
+
+            title = issue['title'].encode('utf-8')
+            body = issue['body'].encode('utf-8')
+            labels = issue['labels']
 
             with open(md_filename, 'w') as f:
                 f.write("# {0} {1}\n\n".format(number, title))
-                f.write("### Reported by {0}\n\n".format(issue['user']['login']))
+                nick = issue['user']['login'].encode('utf-8')
+                f.write("### Reported by {0}\n\n".format(nick))
+                f.write("### State: {0}\n\n".format(issue['state']))
+                f.write("### Labels:\n")
+                for label in labels:
+                    name = label['name'].encode('utf-8')
+                    color = label['color']
+                    f.write("{0}\n{1}\n".format(name, color))
+                f.write("\n")
                 # Increase the indent level of any Markdown heading
                 body = re.sub(r'^(#+)', r'#\1', body)
                 body = replace_images(body)
-                f.write(body.encode('utf-8'))
+                f.write(body)
                 f.write("\n\n")
                 if issue['comments'] > 0:
                     comments_request = requests.get(issue['comments_url'],
@@ -128,19 +141,19 @@ def main(repo):
                         comment_body = replace_images(comment_body)
                         f.write(comment_body.encode('utf-8'))
                         f.write("\n\n")
-
-            subprocess.check_call(['pandoc',
-                                   '-f',
-                                   'markdown_github',
-                                   md_filename,
-                                   '-o',
-                                   pdf_filename])
-
-            os.remove(ntf.name)
-
         page += 1
         if 'Link' not in r.headers:
             break
+
+
+import shutil
+
+
+def move(repo):
+    shutil.move(images_directory, join(mds_directory, 'images'))
+    shutil.move('raw_json.json', join(mds_directory, 'raw_json.json'))
+    shutil.move(mds_directory, repo.replace('/', '-'))
+
 
 usage = """Usage: %prog [options] REPOSITORY
 
@@ -158,4 +171,5 @@ else:
     if len(args) != 1:
         parser.print_help()
     else:
-        main(args[0])
+        download(args[0])
+        move(args[0])
