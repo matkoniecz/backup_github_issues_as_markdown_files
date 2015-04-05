@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# Copyright 2014, 2015 Mark Longair
+# This script is distributed under the terms of the GNU General Public License.
+# See the COPYING file in this repository for the complete text of the license.
+
 import doctest
 import errno
 import hashlib
