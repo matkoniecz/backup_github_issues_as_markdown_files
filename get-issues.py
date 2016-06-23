@@ -15,7 +15,7 @@ import requests
 # to produce easily printable versions of all the issues for a
 # repository.
 
-with open(join(os.environ['HOME'], '.github-oauth-token.json')) as f:
+with open(join(os.environ['HOME'], '.github-oauth-read-token.json')) as f:
     token = json.load(f)['token']
 
 standard_headers = {'User-Agent': 'github-issues-printer/1.0',
