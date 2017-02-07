@@ -14,11 +14,6 @@ from os.path import dirname, exists, isdir, join, realpath, relpath, splitext
 import re
 import requests
 
-# This is a script that downloads all the GitHub issues in a
-# particular repository and generates a PDF for each one; the idea is
-# to produce easily printable versions of all the issues for a
-# repository.
-
 with open(join(os.environ['HOME'], '.github-oauth-read-token.json')) as f:
     token = json.load(f)['token']
 
