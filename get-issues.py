@@ -55,7 +55,7 @@ def replace_image(match, download=True):
 
     caption = match.group(1)
     url = match.group(2)
-    hashed_url = hashlib.md5(url).hexdigest()
+    hashed_url = hashlib.md5(url.encode('utf-8')).hexdigest()
     extension = splitext(url)[1]
     if not extension:
         raise Exception("No extension at the end of {0} from {1}".format(url, match))
@@ -63,9 +63,9 @@ def replace_image(match, download=True):
     if download:
         if not exists(image_filename):
             r = requests.get(url)
-            with open(image_filename, 'w') as f:
+            with open(image_filename, 'wb') as f:
                 f.write(r.content)
-    return "![{0}]({1})".format(caption.encode('utf-8'), image_filename)
+    return "![{0}]({1})".format(caption, image_filename)
 
 
 def replace_images(md):
@@ -108,20 +108,20 @@ def download(repo):
             raw.write(str(issue))
             raw.write("\n")
 
-            print number
+            print(number)
 
-            title = issue['title'].encode('utf-8')
-            body = issue['body'].encode('utf-8')
+            title = issue['title']
+            body = issue['body']
             labels = issue['labels']
 
             with open(md_filename, 'w') as f:
                 f.write("# {0} {1}\n\n".format(number, title))
-                nick = issue['user']['login'].encode('utf-8')
+                nick = issue['user']['login'
                 f.write("### Reported by {0}\n\n".format(nick))
                 f.write("### State: {0}\n\n".format(issue['state']))
                 f.write("### Labels:\n")
                 for label in labels:
-                    name = label['name'].encode('utf-8')
+                    name = label['name']
                     color = label['color']
                     f.write("{0}\n{1}\n".format(name, color))
                 f.write("\n")
@@ -138,7 +138,7 @@ def download(repo):
                         comment_body = comment['body']
                         comment_body = re.sub(r'^(#+)', r'###\1', comment_body)
                         comment_body = replace_images(comment_body)
-                        f.write(comment_body.encode('utf-8'))
+                        f.write(comment_body)
                         f.write("\n\n")
         page += 1
         if 'Link' not in r.headers:
