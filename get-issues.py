@@ -14,7 +14,7 @@ from os.path import dirname, exists, isdir, join, realpath, relpath, splitext
 import re
 import requests
 
-with open(join(os.environ['HOME'], '.github-oauth-read-token.json')) as f:
+with open(join(os.environ['HOME'], '.oauth-private-repository-control-for-github-backup.json')) as f:
     token = json.load(f)['token']
 
 standard_headers = {'User-Agent': 'github-issues-printer/1.0',
