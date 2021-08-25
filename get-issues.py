@@ -58,7 +58,7 @@ def replace_image(match, download=True):
     hashed_url = hashlib.md5(url).hexdigest()
     extension = splitext(url)[1]
     if not extension:
-        raise Exception("No extension at the end of {0}".format(url))
+        raise Exception("No extension at the end of {0} from {1}".format(url, match))
     image_filename = join(images_directory, hashed_url) + extension
     if download:
         if not exists(image_filename):
