@@ -76,7 +76,11 @@ def replace_images(md):
     by a reference to a local copy.
     """
 
-    return re.sub(r'!\[(.*?)\]\((.*?)\)', replace_image, md)
+    try:
+        return re.sub(r'!\[(.*?)\]\((.*?)\)', replace_image, md)
+    except Exception as e:
+        print("failed on", md)
+        raise e
 
 
 def download(repo):
