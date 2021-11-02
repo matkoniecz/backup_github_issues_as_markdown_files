@@ -116,7 +116,7 @@ def download(repo):
 
             with open(md_filename, 'w') as f:
                 f.write("# {0} {1}\n\n".format(number, title))
-                nick = issue['user']['login'
+                nick = issue['user']['login']
                 f.write("### Reported by {0}\n\n".format(nick))
                 f.write("### State: {0}\n\n".format(issue['state']))
                 f.write("### Labels:\n")
