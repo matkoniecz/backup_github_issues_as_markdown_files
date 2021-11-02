@@ -125,6 +125,9 @@ def download(repo):
                     color = label['color']
                     f.write("{0}\n{1}\n".format(name, color))
                 f.write("\n")
+                if body == None:
+                    # can be empty such as here https://github.com/streetcomplete/StreetComplete/pull/3464
+                    body = ""
                 # Increase the indent level of any Markdown heading
                 body = re.sub(r'^(#+)', r'#\1', body)
                 body = replace_images(body)
